@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ImagePlus, X } from 'lucide-react'
-import { ACCENTS, TRIP_EMOJIS, saveTrip, toISO, uid, type Trip } from '../db'
+import { ACCENTS, ACCENT_COLORS, TRIP_EMOJIS, TRIP_ICONS, saveTrip, toISO, uid, type Trip } from '../db'
 import { useBlobUrl, useMediaUrl } from '../hooks/useMediaUrl'
 import { useScrollLock } from '../hooks/useScrollLock'
 import { colorFor } from './Avatars'
@@ -75,6 +75,7 @@ export default function TripFormModal({ open, onClose, trip, onSaved }: Props) {
     setSaving(true)
     const finalCompanions = person.trim() && !companions.includes(person.trim()) ? [...companions, person.trim()] : companions
     const t: Trip = {
+      ...trip,
       id: trip?.id ?? uid(),
       createdAt: trip?.createdAt ?? Date.now(),
       coverMediaId: trip?.coverMediaId,
@@ -204,38 +205,42 @@ export default function TripFormModal({ open, onClose, trip, onSaved }: Props) {
                 </div>
               </Field>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Icon">
-                  <div className="flex flex-wrap gap-1.5">
-                    {TRIP_EMOJIS.map((e) => (
+              <Field label="Icon">
+                <div className="flex flex-wrap gap-1.5">
+                  {TRIP_ICONS.map((i) => (
+                    <Tip key={i.emoji} label={i.label}>
                       <button
                         type="button"
-                        key={e}
-                        onClick={() => setEmoji(e)}
+                        onClick={() => setEmoji(i.emoji)}
+                        aria-label={i.label}
+                        aria-pressed={emoji === i.emoji}
                         className={`grid h-9 w-9 place-items-center rounded-xl text-xl transition ${
-                          emoji === e ? 'scale-110 bg-paper-2 ring-2 ring-terracotta' : 'hover:bg-paper-2'
+                          emoji === i.emoji ? 'scale-110 bg-paper-2 ring-2 ring-terracotta' : 'hover:bg-paper-2'
                         }`}
                       >
-                        {e}
+                        {i.emoji}
                       </button>
-                    ))}
-                  </div>
-                </Field>
-                <Field label="Color">
-                  <div className="flex flex-wrap gap-2.5 pt-1">
-                    {ACCENTS.map((c) => (
+                    </Tip>
+                  ))}
+                </div>
+              </Field>
+
+              <Field label="Color">
+                <div className="flex flex-wrap gap-2.5 pt-1">
+                  {ACCENT_COLORS.map((c) => (
+                    <Tip key={c.value} label={c.label}>
                       <button
                         type="button"
-                        key={c}
-                        onClick={() => setAccent(c)}
-                        className={`h-8 w-8 rounded-full transition ${accent === c ? 'scale-110 ring-4 ring-offset-2 ring-offset-[var(--paper)]' : 'hover:scale-110'}`}
-                        style={{ background: c, ['--tw-ring-color' as string]: c + '66' }}
-                        aria-label={`Color ${c}`}
+                        onClick={() => setAccent(c.value)}
+                        aria-label={c.label}
+                        aria-pressed={accent === c.value}
+                        className={`block h-8 w-8 rounded-full transition ${accent === c.value ? 'scale-110 ring-4 ring-offset-2 ring-offset-[var(--paper)]' : 'hover:scale-110'}`}
+                        style={{ background: c.value, ['--tw-ring-color' as string]: c.value + '66' }}
                       />
-                    ))}
-                  </div>
-                </Field>
-              </div>
+                    </Tip>
+                  ))}
+                </div>
+              </Field>
 
               <Field label="Notes (optional)">
                 <textarea
@@ -265,6 +270,21 @@ export default function TripFormModal({ open, onClose, trip, onSaved }: Props) {
         </motion.div>
       )}
     </AnimatePresence>
+  )
+}
+
+/** Small label that appears above its child on hover or keyboard focus. */
+function Tip({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <span className="group/tip relative inline-flex">
+      {children}
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 translate-y-1 whitespace-nowrap rounded-lg bg-ink px-2.5 py-1 text-xs font-medium text-paper opacity-0 shadow-lg transition duration-150 group-hover/tip:translate-y-0 group-hover/tip:opacity-100 group-focus-within/tip:translate-y-0 group-focus-within/tip:opacity-100"
+      >
+        {label}
+      </span>
+    </span>
   )
 }
 
