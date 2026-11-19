@@ -13,6 +13,7 @@ The notes are shorthand written for my own memory: comma-separated fragments, ty
 - Break each day into its moments, in the order they happened. Merge trivial fragments that belong together (for example a ride and the place it led to) so a day reads as roughly 4 to 10 moments.
 - Give each moment a time of day only when the notes make it reasonably clear (meals, "midnight", "woke up", position in the day). Otherwise use "anytime".
 - Titles are short and concrete (at most 6 words). Put names, places and the small specifics that make the memory vivid in the detail line. Leave detail as an empty string when the title says it all.
+- Set "place" to the specific venue, neighborhood or landmark where the moment happened, written the way a map search would find it (for example "Wynwood Walls" or "Miami International Airport"). Only use places named in the notes. Use an empty string when there is no clear place, or the moment is just travel between places.
 - Fix obvious typos and capitalization, keep my names for people and places, and never add facts, places or feelings that are not in the notes.
 - The headline is a short, specific title for the day (2 to 5 words). The summary is one or two plain sentences in second person ("You ...").
 
@@ -26,7 +27,7 @@ Reply with only a JSON code block in exactly this shape, and nothing else:
       "headline": "...",
       "summary": "...",
       "moments": [
-        { "time": "morning | afternoon | evening | night | anytime", "title": "...", "detail": "..." }
+        { "time": "morning | afternoon | evening | night | anytime", "title": "...", "detail": "...", "place": "..." }
       ]
     }
   ]
@@ -72,6 +73,7 @@ export function parseTimeline(reply: string): GeneratedDay[] {
             time: TIMES.includes(m?.time as TimeOfDay) ? (m.time as TimeOfDay) : 'anytime',
             title: str(m?.title),
             detail: str(m?.detail),
+            place: str(m?.place),
           }))
           .filter((m: { title: string }) => m.title),
       }
