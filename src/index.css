@@ -114,3 +114,57 @@ body::before {
 .no-scrollbar {
   scrollbar-width: none;
 }
+
+/* Scroll-driven reveals for the trip timeline. Browsers without support simply show the content. */
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(28px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes reveal-from-left {
+  from { opacity: 0; transform: translateX(-36px) rotate(-1.5deg); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes reveal-from-right {
+  from { opacity: 0; transform: translateX(36px) rotate(1.5deg); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes spine-grow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: reveal-up linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
+    @media (min-width: 768px) {
+      .reveal.reveal-left { animation-name: reveal-from-left; }
+      .reveal.reveal-right { animation-name: reveal-from-right; }
+    }
+    .spine-fill {
+      transform-origin: top;
+      animation: spine-grow linear both;
+      animation-timeline: view();
+      animation-range: entry 15% exit 55%;
+    }
+  }
+}
+@supports not (animation-timeline: view()) {
+  .spine-fill { opacity: 0.6; }
+}
+
+/* little arrow from each card toward the spine (desktop zigzag only) */
+@media (min-width: 768px) {
+  .moment-card::after {
+    content: '';
+    position: absolute;
+    top: 1.35rem;
+    width: 2.25rem;
+    border-top: 2px dotted var(--line);
+  }
+  .reveal-left .moment-card::after { left: 100%; }
+  .reveal-right .moment-card::after { right: 100%; }
+}

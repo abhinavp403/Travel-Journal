@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ChevronLeft, ChevronRight, ImagePlus, Play, Star, Trash2, UploadCloud, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ImagePlus, Play, Star, Trash2, X } from 'lucide-react'
 import { addMediaFiles, db, type Media } from '../db'
 import { useBlobUrl } from '../hooks/useMediaUrl'
 import { useScrollLock } from '../hooks/useScrollLock'
@@ -38,31 +38,21 @@ export default function MediaGallery({ tripId, dayId, accent }: { tripId: string
       {items && items.length === 0 ? (
         <button
           onClick={() => input.current?.click()}
-          className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line px-6 py-14 text-ink-soft transition hover:border-current"
-          style={{ ['--hover' as string]: accent }}
+          className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 text-sm text-ink-soft transition hover:border-ink-soft hover:text-ink"
         >
-          <motion.div
-            animate={{ y: [0, -6, 0] }}
-            transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
-            className="grid h-14 w-14 place-items-center rounded-2xl text-white shadow-lg"
-            style={{ background: accent }}
-          >
-            <UploadCloud size={26} />
-          </motion.div>
-          <span className="mt-2 font-medium text-ink">Drag & drop photos or videos</span>
-          <span className="text-sm">or click to browse</span>
+          <ImagePlus size={15} /> Add photos or videos
         </button>
       ) : (
-        <div className="columns-2 gap-3 sm:columns-3 lg:columns-4">
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {items?.map((m, i) => (
             <Thumb key={m.id} media={m} index={i} onOpen={() => setOpenIndex(i)} />
           ))}
           <button
             onClick={() => input.current?.click()}
-            className="mb-3 flex aspect-square w-full break-inside-avoid flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line text-ink-soft transition hover:text-ink"
+            aria-label="Add photos or videos"
+            className="grid aspect-square place-items-center rounded-xl border border-dashed border-line text-ink-soft transition hover:border-ink-soft hover:text-ink"
           >
-            <ImagePlus size={24} />
-            <span className="text-sm font-medium">Add more</span>
+            <ImagePlus size={20} />
           </button>
         </div>
       )}
@@ -103,15 +93,14 @@ function Thumb({ media, index, onOpen }: { media: Media; index: number; onOpen: 
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: Math.min(index * 0.04, 0.4) }}
-      whileHover={{ y: -3 }}
-      onClick={onOpen}
-      className="group relative mb-3 block w-full break-inside-avoid overflow-hidden rounded-2xl bg-paper-2 shadow-md"
+            onClick={onOpen}
+      className="group relative block aspect-square w-full overflow-hidden rounded-xl bg-paper-2"
     >
       {url &&
         (media.type === 'video' ? (
-          <video src={url + '#t=0.1'} muted playsInline preload="metadata" className="block w-full" />
+          <video src={url + '#t=0.1'} muted playsInline preload="metadata" className="h-full w-full object-cover" />
         ) : (
-          <img src={url} alt={media.caption ?? ''} className="block w-full transition duration-500 group-hover:scale-105" />
+          <img src={url} alt={media.caption ?? ''} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
         ))}
       {media.type === 'video' && (
         <span className="absolute inset-0 grid place-items-center">
