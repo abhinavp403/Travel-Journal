@@ -12,7 +12,15 @@ export interface Trip {
   coverMediaId?: string
   notes?: string
   rawNotes?: string // the pasted trip notes the timeline was generated from
+  placeFixes?: Record<string, PlaceFix> // manual map locations, keyed by lowercased place name
   createdAt: number
+}
+
+/** A hand-corrected map location: either a better search (usually a full address) or a spot clicked on the map. */
+export interface PlaceFix {
+  query?: string
+  lat?: number
+  lng?: number
 }
 
 export interface Activity {
@@ -28,6 +36,7 @@ export interface Moment {
   time: TimeOfDay
   title: string
   detail?: string
+  place?: string // venue or landmark name, used to pin the moment on the trip map
 }
 
 export interface Day {
@@ -41,6 +50,19 @@ export interface Day {
   headline?: string
   summary?: string
   moments?: Moment[]
+  weather?: DayWeather
+}
+
+/** One day's weather at the trip's destination, from Open-Meteo. */
+export interface DayWeather {
+  code: number // WMO weather code
+  max: number
+  min: number
+  precip: number
+  unit: 'F' | 'C' // precipitation is inches with F, millimetres with C
+  key: string // location + unit it was fetched for
+  final: boolean // true = historical record, false = forecast that may still change
+  at: number
 }
 
 export interface Media {
@@ -57,6 +79,17 @@ export const db = new Dexie('travel-journal') as Dexie & {
   trips: EntityTable<Trip, 'id'>
   days: EntityTable<Day, 'id'>
   media: EntityTable<Media, 'id'>
+  geocache: EntityTable<GeoCacheRow, 'q'>
+}
+
+/** Remembered map lookups, so each place is only searched for once. */
+export interface GeoCacheRow {
+  q: string
+  found: boolean
+  lat?: number
+  lng?: number
+  bbox?: [south: number, north: number, west: number, east: number]
+  at: number
 }
 
 db.version(1).stores({
@@ -64,6 +97,7 @@ db.version(1).stores({
   days: 'id, tripId, [tripId+date]',
   media: 'id, tripId, dayId, createdAt',
 })
+db.version(2).stores({ geocache: 'q' })
 
 export const uid = () => crypto.randomUUID()
 
@@ -146,7 +180,7 @@ export interface GeneratedDay {
   day: number
   headline: string
   summary: string
-  moments: { time: TimeOfDay; title: string; detail: string }[]
+  moments: { time: TimeOfDay; title: string; detail: string; place?: string }[]
 }
 
 /** Store a generated per-day timeline (and the notes it came from) on the trip. */
@@ -159,7 +193,7 @@ export async function applyTimeline(tripId: string, notes: string, generated: Ge
       await db.days.update(d.id, {
         headline: g?.headline,
         summary: g?.summary,
-        moments: g?.moments.map((m) => ({ time: m.time, title: m.title, detail: m.detail || undefined })),
+        moments: g?.moments.map((m) => ({ time: m.time, title: m.title, detail: m.detail || undefined, place: m.place || undefined })),
       })
     }
     await db.trips.update(tripId, { rawNotes: notes })

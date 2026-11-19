@@ -8,6 +8,8 @@ import { fmtRange } from '../format'
 import { useMediaUrl } from '../hooks/useMediaUrl'
 import TripFormModal from '../components/TripFormModal'
 import NotesComposer from '../components/NotesComposer'
+import TripMap from '../components/TripMap'
+import { syncWeather } from '../weather'
 import DayTimeline, { momentsOf } from '../components/DayTimeline'
 
 export default function TripPage() {
@@ -19,6 +21,12 @@ export default function TripPage() {
   const trip = useLiveQuery(() => db.trips.get(id), [id], null)
   const days = useLiveQuery(() => db.days.where('tripId').equals(id).sortBy('date'), [id])
   const cover = useMediaUrl(trip?.coverMediaId)
+
+  // fetch each day's weather once the trip and its days are known; failures just leave the chips off
+  const weatherKey = trip && days ? `${trip.id}|${trip.destination}|${days.map((d) => d.date).join()}` : ''
+  useEffect(() => {
+    if (trip && days) syncWeather(trip, days).catch(() => undefined)
+  }, [weatherKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // highlight the day currently on screen in the sticky day bar
   const [activeDay, setActiveDay] = useState(1)
@@ -187,6 +195,8 @@ export default function TripPage() {
                 <PenLine size={14} /> <span className="hidden sm:inline">Edit notes</span>
               </button>
             </nav>
+
+            <TripMap trip={trip} days={days} />
 
             {days.map((d, i) => (
               <div key={d.id}>

@@ -1,4 +1,6 @@
-import type { Day, Moment, TimeOfDay } from '../db'
+import { MapPin } from 'lucide-react'
+import type { Day, DayWeather, Moment, TimeOfDay } from '../db'
+import { describeWeather } from '../weather'
 import { monthDay, weekday } from '../format'
 import MediaGallery from './MediaGallery'
 
@@ -64,6 +66,24 @@ export function momentsOf(day: Day): Moment[] {
     .map((a) => ({ time: fromClock(a.time), title: a.title, detail: a.note }))
 }
 
+function WeatherChip({ w }: { w: DayWeather }) {
+  const { icon, label } = describeWeather(w.code)
+  const rain = w.precip > 0 ? (w.unit === 'F' ? `${w.precip.toFixed(2)} in` : `${w.precip.toFixed(1)} mm`) : ''
+  return (
+    <span
+      className="flex items-center gap-1.5 rounded-full border border-line bg-paper/60 px-3 py-1 text-xs font-medium text-ink-soft"
+      title={`${label}, high ${Math.round(w.max)}°${w.unit}, low ${Math.round(w.min)}°${w.unit}${rain ? `, ${rain} of rain or snow` : ''}${w.final ? '' : ' (forecast)'}`}
+    >
+      <span className="text-sm leading-none">{icon}</span>
+      {label}
+      <span className="text-ink">
+        {Math.round(w.max)}° <span className="text-ink-soft">/ {Math.round(w.min)}°{w.unit}</span>
+      </span>
+      {rain && <span>· {rain}</span>}
+    </span>
+  )
+}
+
 export default function DayTimeline({ day, number, accent }: { day: Day; number: number; accent: string }) {
   const moments = momentsOf(day)
   const summary = day.summary ?? day.thoughts
@@ -97,6 +117,7 @@ export default function DayTimeline({ day, number, accent }: { day: Day; number:
             <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-soft">
               {weekday(day.date)} · {monthDay(day.date)}
             </span>
+            {day.weather && <WeatherChip w={day.weather} />}
           </div>
 
           {day.headline && (
@@ -171,6 +192,11 @@ export default function DayTimeline({ day, number, accent }: { day: Day; number:
                       />
                       <div className="font-serif text-lg font-semibold leading-snug">{m.title}</div>
                       {m.detail && <div className="mt-1 text-sm leading-relaxed text-ink-soft">{m.detail}</div>}
+                      {m.place && (
+                        <div className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-ink-soft/80">
+                          <MapPin size={11} strokeWidth={2.5} /> {m.place}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
