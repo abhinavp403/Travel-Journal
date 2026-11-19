@@ -79,11 +79,13 @@ export default function TripCard({ trip, index }: { trip: Trip; index: number })
           <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/5 to-transparent" />
 
           <div className="absolute left-4 right-4 top-4 flex items-center justify-between">
-            <span className="rounded-full border border-white/25 bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white backdrop-blur-md">
-              {status === 'now' && <span className="mr-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-300 align-middle" />}
-              {status === 'now' ? 'On the road' : status === 'upcoming' ? 'Upcoming' : 'Memory'}
-            </span>
-            <span className="grid h-8 w-8 -translate-y-1 place-items-center rounded-full bg-white text-neutral-900 opacity-0 shadow-lg transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+            {status !== 'past' && (
+              <span className="rounded-full border border-white/25 bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white backdrop-blur-md">
+                {status === 'now' && <span className="mr-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-300 align-middle" />}
+                {status === 'now' ? 'On the road' : 'Upcoming'}
+              </span>
+            )}
+            <span className="ml-auto grid h-8 w-8 -translate-y-1 place-items-center rounded-full bg-white text-neutral-900 opacity-0 shadow-lg transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
               <ArrowUpRight size={16} />
             </span>
           </div>
