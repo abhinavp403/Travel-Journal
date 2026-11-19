@@ -11,6 +11,7 @@ export interface Trip {
   emoji: string
   coverMediaId?: string
   notes?: string
+  rawNotes?: string // the pasted trip notes the timeline was generated from
   createdAt: number
 }
 
@@ -21,6 +22,14 @@ export interface Activity {
   note?: string
 }
 
+export type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'night' | 'anytime'
+
+export interface Moment {
+  time: TimeOfDay
+  title: string
+  detail?: string
+}
+
 export interface Day {
   id: string
   tripId: string
@@ -28,6 +37,10 @@ export interface Day {
   mood?: string
   thoughts: string
   activities: Activity[]
+  // AI-generated from the trip's pasted notes
+  headline?: string
+  summary?: string
+  moments?: Moment[]
 }
 
 export interface Media {
@@ -86,7 +99,7 @@ async function syncDays(trip: Trip) {
   for (const d of existing) {
     if (wanted.has(d.date)) continue
     const mediaCount = await db.media.where('dayId').equals(d.id).count()
-    if (!d.thoughts && d.activities.length === 0 && !d.mood && mediaCount === 0) {
+    if (!d.thoughts && d.activities.length === 0 && !d.mood && !d.moments?.length && mediaCount === 0) {
       await db.days.delete(d.id)
     }
   }
@@ -129,6 +142,76 @@ export async function addMediaFiles(tripId: string, dayId: string, files: File[]
   return items.length
 }
 
-export const ACCENTS = ['#e07a5f', '#3d8b8b', '#f2a541', '#6d5dfc', '#d6577a', '#4f9d69']
-export const TRIP_EMOJIS = ['🏝️', '🏔️', '🗼', '🏜️', '🌋', '🏙️', '🌸', '⛩️', '🗽', '🛶', '🍷', '🎒']
+export interface GeneratedDay {
+  day: number
+  headline: string
+  summary: string
+  moments: { time: TimeOfDay; title: string; detail: string }[]
+}
+
+/** Store a generated per-day timeline (and the notes it came from) on the trip. */
+export async function applyTimeline(tripId: string, notes: string, generated: GeneratedDay[]) {
+  await db.transaction('rw', db.trips, db.days, async () => {
+    const days = await db.days.where('tripId').equals(tripId).sortBy('date')
+    const byNumber = new Map(generated.map((g) => [Math.min(Math.max(1, g.day), days.length), g]))
+    for (const [i, d] of days.entries()) {
+      const g = byNumber.get(i + 1)
+      await db.days.update(d.id, {
+        headline: g?.headline,
+        summary: g?.summary,
+        moments: g?.moments.map((m) => ({ time: m.time, title: m.title, detail: m.detail || undefined })),
+      })
+    }
+    await db.trips.update(tripId, { rawNotes: notes })
+  })
+}
+
+export const ACCENT_COLORS = [
+  { value: '#e07a5f', label: 'Terracotta' },
+  { value: '#c0392b', label: 'Crimson' },
+  { value: '#d6577a', label: 'Raspberry' },
+  { value: '#8e4a8a', label: 'Plum' },
+  { value: '#6d5dfc', label: 'Violet' },
+  { value: '#2f3e6b', label: 'Navy' },
+  { value: '#3b82c4', label: 'Sky blue' },
+  { value: '#3d8b8b', label: 'Ocean teal' },
+  { value: '#4f9d69', label: 'Forest green' },
+  { value: '#f2a541', label: 'Marigold' },
+  { value: '#8b5e3c', label: 'Mocha' },
+  { value: '#5b6770', label: 'Slate' },
+]
+
+export const TRIP_ICONS = [
+  { emoji: '🏝️', label: 'Beach' },
+  { emoji: '🤿', label: 'Diving & snorkeling' },
+  { emoji: '🚢', label: 'Cruise' },
+  { emoji: '🛶', label: 'Lake & paddling' },
+  { emoji: '🏔️', label: 'Mountains' },
+  { emoji: '⛷️', label: 'Skiing' },
+  { emoji: '🥾', label: 'Hiking' },
+  { emoji: '🏕️', label: 'Camping' },
+  { emoji: '🏜️', label: 'Desert' },
+  { emoji: '🌋', label: 'Volcano' },
+  { emoji: '🦁', label: 'Safari' },
+  { emoji: '🏙️', label: 'City break' },
+  { emoji: '🗼', label: 'Sightseeing' },
+  { emoji: '🗽', label: 'New York' },
+  { emoji: '⛩️', label: 'Temples & shrines' },
+  { emoji: '🌸', label: 'Cherry blossom' },
+  { emoji: '🎤', label: 'Concert' },
+  { emoji: '🎪', label: 'Festival' },
+  { emoji: '🏟️', label: 'Sports event' },
+  { emoji: '🎢', label: 'Theme park' },
+  { emoji: '🚗', label: 'Road trip' },
+  { emoji: '🚆', label: 'Train journey' },
+  { emoji: '🎒', label: 'Backpacking' },
+  { emoji: '🍷', label: 'Food & wine' },
+  { emoji: '🎉', label: 'Celebration' },
+  { emoji: '💍', label: 'Wedding & honeymoon' },
+  { emoji: '🏡', label: 'Visiting family' },
+  { emoji: '💼', label: 'Work trip' },
+]
+
+export const ACCENTS = ACCENT_COLORS.map((c) => c.value)
+export const TRIP_EMOJIS = TRIP_ICONS.map((i) => i.emoji)
 export const MOODS = ['🤩', '😊', '😌', '😴', '🥵', '🌧️', '😅', '🥹']
